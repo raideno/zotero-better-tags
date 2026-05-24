@@ -1,0 +1,26 @@
+# trigger on version tag, automatically create a .xpi build and associate a release
+
+name: Publish XPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build XPI
+        run: zip -r property-columns.xpi manifest.json bootstrap.js chrome/
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: property-columns.xpi
