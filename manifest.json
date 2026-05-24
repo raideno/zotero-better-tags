@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Property Columns",
+  "version": "0.1.0",
+  "description": "Adds custom columns to Zotero item list based on property: tags",
+  "author": "Nadir KICHOU",
+  "applications": {
+    "zotero": {
+      "id": "property-columns@zotero-plugin.local",
+      "update_url": "https://raw.githubusercontent.com/placeholder/property-columns/main/updates.json",
+      "strict_min_version": "7.0",
+      "strict_max_version": "9.*"
+    }
+  }
+}
