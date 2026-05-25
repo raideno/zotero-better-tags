@@ -1,24 +1,24 @@
 class PropertyColumnsPlugin {
   private rootURI: string;
-  private _columnKeys: Map<string, string>;
-  private _notifierID: string | null;
-  private _initialized: boolean;
+  private columnKeys: Map<string, string>;
+  private observer: string | null;
+  private isInitialized: boolean;
 
   constructor(rootURI: string) {
     this.rootURI = rootURI;
-    this._columnKeys = new Map();
-    this._notifierID = null;
-    this._initialized = false;
+    this.columnKeys = new Map();
+    this.observer = null;
+    this.isInitialized = false;
   }
 
   async init() {
-    if (this._initialized) return;
-    this._initialized = true;
+    if (this.isInitialized) return;
+    this.isInitialized = true;
 
     await Zotero.initializationPromise;
-    await this._refreshColumns();
+    await this.refresh();
 
-    this._notifierID = Zotero.Notifier.registerObserver(
+    this.observer = Zotero.Notifier.registerObserver(
       {
         notify: async (
           event: string,
@@ -30,7 +30,7 @@ class PropertyColumnsPlugin {
             ["item", "collection-item"].includes(type) &&
             ["add", "modify", "delete", "trash"].includes(event)
           ) {
-            await this._refreshColumns();
+            await this.refresh();
           }
         },
       },
@@ -40,42 +40,42 @@ class PropertyColumnsPlugin {
   }
 
   async destroy() {
-    if (this._notifierID) {
-      Zotero.Notifier.unregisterObserver(this._notifierID);
-      this._notifierID = null;
+    if (this.observer) {
+      Zotero.Notifier.unregisterObserver(this.observer);
+      this.observer = null;
     }
-    for (const [name, key] of this._columnKeys) {
+    for (const [name, key] of this.columnKeys) {
       try {
         await Zotero.ItemTreeManager.unregisterColumns(key);
       } catch (e) {
         // ignore unregister errors
       }
     }
-    this._columnKeys.clear();
-    this._initialized = false;
+    this.columnKeys.clear();
+    this.isInitialized = false;
   }
 
-  private async _refreshColumns() {
+  private async refresh() {
     try {
-      const propertyNames = await this._discoverPropertyNames();
+      const propertyNames = await this.discoverPropertyNames();
       const desired = new Set(propertyNames);
 
-      for (const name of this._columnKeys.keys()) {
+      for (const [name, value] of this.columnKeys.entries()) {
         if (!desired.has(name)) {
           try {
             await Zotero.ItemTreeManager.unregisterColumns(
-              this._columnKeys.get(name) as string,
+              value
             );
           } catch (e) {
             // ignore unregister errors
           }
-          this._columnKeys.delete(name);
+          this.columnKeys.delete(name);
         }
       }
 
       for (const name of propertyNames) {
-        if (!this._columnKeys.has(name)) {
-          await this._registerColumn(name);
+        if (!this.columnKeys.has(name)) {
+          await this.registerColumn(name);
         }
       }
     } catch (e) {
@@ -89,7 +89,7 @@ class PropertyColumnsPlugin {
     }
   }
 
-  private async _discoverPropertyNames() {
+  private async discoverPropertyNames() {
     const names = new Set<string>();
     const libraryID = Zotero.Libraries.userLibraryID;
     const search = new Zotero.Search();
@@ -101,14 +101,14 @@ class PropertyColumnsPlugin {
     const items = await Zotero.Items.getAsync(ids);
     for (const item of items) {
       for (const { tag } of item.getTags()) {
-        const parsed = this._parsePropertyTag(tag);
+        const parsed = this.parsePropertyTag(tag);
         if (parsed) names.add(parsed.name);
       }
     }
     return [...names].sort();
   }
 
-  private async _registerColumn(propertyName: string) {
+  private async registerColumn(propertyName: string) {
     try {
       const registeredKey = await Zotero.ItemTreeManager.registerColumns({
         dataKey: "propcol_" + propertyName.replace(/[^a-zA-Z0-9_]/g, "_"),
@@ -119,7 +119,7 @@ class PropertyColumnsPlugin {
           _key: string,
         ) => {
           for (const { tag } of item.getTags()) {
-            const parsed = this._parsePropertyTag(tag);
+            const parsed = this.parsePropertyTag(tag);
             if (parsed && parsed.name === propertyName) return parsed.value;
           }
           return "";
@@ -129,7 +129,7 @@ class PropertyColumnsPlugin {
 
       if (registeredKey == false) throw Error("No column registered");
 
-      this._columnKeys.set(propertyName, registeredKey);
+      this.columnKeys.set(propertyName, registeredKey);
     } catch (e) {
       const error = e as Error;
       Zotero.debug(
@@ -141,7 +141,7 @@ class PropertyColumnsPlugin {
     }
   }
 
-  private _parsePropertyTag(tag: string) {
+  private parsePropertyTag(tag: string) {
     if (!tag.startsWith("property:")) return null;
     const rest = tag.slice("property:".length);
     const colonIdx = rest.indexOf(":");
@@ -153,15 +153,13 @@ class PropertyColumnsPlugin {
   }
 }
 
-const ZoteroAPI = Zotero;
-
 let PropertyColumns: PropertyColumnsPlugin | undefined;
 
 async function startup(
   { id, version, rootURI }: { id: string; version: string; rootURI: string },
   reason: string,
 ) {
-  ZoteroAPI.debug(
+  Zotero.debug(
     "[PropertyColumns] bootstrap startup() called, version " + version,
   );
   try {
@@ -169,7 +167,7 @@ async function startup(
     await PropertyColumns.init();
   } catch (e) {
     const error = e as Error;
-    ZoteroAPI.debug(
+    Zotero.debug(
       "[PropertyColumns] FATAL ERROR in startup: " + error + "\n" + error.stack,
     );
   }
@@ -179,7 +177,7 @@ async function shutdown(
   { id, version, rootURI }: { id: string; version: string; rootURI: string },
   reason: string,
 ) {
-  ZoteroAPI.debug("[PropertyColumns] bootstrap shutdown() called");
+  Zotero.debug("[PropertyColumns] bootstrap shutdown() called");
   if (PropertyColumns) {
     await PropertyColumns.destroy();
     PropertyColumns = undefined;
