@@ -1,7 +1,5 @@
 {
-  "name": "zotero-better-plugin",
   "private": true,
-  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json && cp src/manifest.json dist/manifest.json",
@@ -11,8 +9,5 @@
   "devDependencies": {
     "typescript": "^5.5.4",
     "zotero-types": "^1.0.0"
-  },
-  "dependencies": {
-    "zotero-plugin-toolkit": "^5.1.2"
   }
 }
