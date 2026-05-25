@@ -112,7 +112,7 @@ class PropertyColumnsPlugin {
     try {
       const registeredKey = await Zotero.ItemTreeManager.registerColumns({
         dataKey: "propcol_" + propertyName.replace(/[^a-zA-Z0-9_]/g, "_"),
-        label: propertyName,
+        label: "[Property] " + propertyName,
         pluginID: "property-columns@zotero-plugin.local",
         dataProvider: (
           item: { getTags: () => Array<{ tag: string }> },
