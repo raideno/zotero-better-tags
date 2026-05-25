@@ -5,8 +5,12 @@ Simple Zotero plugin that improves tag workflows.
 ## Build
 
 ```zsh
-zip -r plugin.xpi manifest.json bootstrap.js chrome/
+npm install
+npm run build
+npm run pack
 ```
+
+Outputs to `dist/`. The `pack` script generates `plugin.xpi` from `dist/`.
 
 ## Install
 

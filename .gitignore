@@ -1,1 +1,6 @@
 *.xpi
+*.zip
+dist/
+node_modules/
+.ts-build/
+.DS_Store
