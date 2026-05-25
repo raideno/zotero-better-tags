@@ -11,7 +11,7 @@ class PropertyColumnsPlugin {
     this._initialized = false;
   }
 
-  async init(): Promise<void> {
+  async init() {
     if (this._initialized) return;
     this._initialized = true;
 
@@ -39,7 +39,7 @@ class PropertyColumnsPlugin {
     );
   }
 
-  async destroy(): Promise<void> {
+  async destroy() {
     if (this._notifierID) {
       Zotero.Notifier.unregisterObserver(this._notifierID);
       this._notifierID = null;
@@ -55,7 +55,7 @@ class PropertyColumnsPlugin {
     this._initialized = false;
   }
 
-  private async _refreshColumns(): Promise<void> {
+  private async _refreshColumns() {
     try {
       const propertyNames = await this._discoverPropertyNames();
       const desired = new Set(propertyNames);
@@ -89,7 +89,7 @@ class PropertyColumnsPlugin {
     }
   }
 
-  private async _discoverPropertyNames(): Promise<string[]> {
+  private async _discoverPropertyNames() {
     const names = new Set<string>();
     const libraryID = Zotero.Libraries.userLibraryID;
     const search = new Zotero.Search();
@@ -108,7 +108,7 @@ class PropertyColumnsPlugin {
     return [...names].sort();
   }
 
-  private async _registerColumn(propertyName: string): Promise<void> {
+  private async _registerColumn(propertyName: string) {
     try {
       const registeredKey = await Zotero.ItemTreeManager.registerColumns({
         dataKey: "propcol_" + propertyName.replace(/[^a-zA-Z0-9_]/g, "_"),
@@ -141,9 +141,7 @@ class PropertyColumnsPlugin {
     }
   }
 
-  private _parsePropertyTag(
-    tag: string,
-  ): { name: string; value: string } | null {
+  private _parsePropertyTag(tag: string) {
     if (!tag.startsWith("property:")) return null;
     const rest = tag.slice("property:".length);
     const colonIdx = rest.indexOf(":");

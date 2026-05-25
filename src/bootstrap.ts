@@ -13,7 +13,7 @@ let PropertyColumns: PropertyColumnsInstance | undefined;
 async function startup(
   { id, version, rootURI }: { id: string; version: string; rootURI: string },
   reason: string,
-): Promise<void> {
+) {
   ZoteroAPI.debug(
     "[PropertyColumns] bootstrap startup() called, version " + version,
   );
@@ -40,7 +40,7 @@ async function startup(
 async function shutdown(
   { id, version, rootURI }: { id: string; version: string; rootURI: string },
   reason: string,
-): Promise<void> {
+) {
   ZoteroAPI.debug("[PropertyColumns] bootstrap shutdown() called");
   if (PropertyColumns) {
     await PropertyColumns.destroy();
