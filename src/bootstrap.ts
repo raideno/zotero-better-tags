@@ -2,12 +2,17 @@ class PropertyColumnsPlugin {
   private rootURI: string;
   private columnKeys: Map<string, string>;
   private observer: string | null;
+  private prefObserver: symbol | null;
   private isInitialized: boolean;
+  private static readonly COLUMN_PREFIX_PREF =
+    "extensions.property-columns@zotero-plugin.local.columnPrefix";
+  private static readonly DEFAULT_COLUMN_PREFIX = "[Property] ";
 
   constructor(rootURI: string) {
     this.rootURI = rootURI;
     this.columnKeys = new Map();
     this.observer = null;
+    this.prefObserver = null;
     this.isInitialized = false;
   }
 
@@ -16,6 +21,8 @@ class PropertyColumnsPlugin {
     this.isInitialized = true;
 
     await Zotero.initializationPromise;
+    this.ensureColumnPrefixPref();
+    this.registerPrefObserver();
     await this.refresh();
 
     this.observer = Zotero.Notifier.registerObserver(
@@ -44,6 +51,10 @@ class PropertyColumnsPlugin {
       Zotero.Notifier.unregisterObserver(this.observer);
       this.observer = null;
     }
+    if (this.prefObserver !== null) {
+      Zotero.Prefs.unregisterObserver(this.prefObserver);
+      this.prefObserver = null;
+    }
     for (const [name, key] of this.columnKeys) {
       try {
         await Zotero.ItemTreeManager.unregisterColumns(key);
@@ -63,9 +74,7 @@ class PropertyColumnsPlugin {
       for (const [name, value] of this.columnKeys.entries()) {
         if (!desired.has(name)) {
           try {
-            await Zotero.ItemTreeManager.unregisterColumns(
-              value
-            );
+            await Zotero.ItemTreeManager.unregisterColumns(value);
           } catch (e) {
             // ignore unregister errors
           }
@@ -112,7 +121,7 @@ class PropertyColumnsPlugin {
     try {
       const registeredKey = await Zotero.ItemTreeManager.registerColumns({
         dataKey: "propcol_" + propertyName.replace(/[^a-zA-Z0-9_]/g, "_"),
-        label: "[Property] " + propertyName,
+        label: this.getColumnLabel(propertyName),
         pluginID: "property-columns@zotero-plugin.local",
         dataProvider: (
           item: { getTags: () => Array<{ tag: string }> },
@@ -139,6 +148,51 @@ class PropertyColumnsPlugin {
           error,
       );
     }
+  }
+
+  private getColumnLabel(propertyName: string) {
+    const prefix = this.getColumnPrefix();
+    if (!prefix) return propertyName;
+    return prefix + propertyName;
+  }
+
+  private getColumnPrefix() {
+    const value = Zotero.Prefs.get(PropertyColumnsPlugin.COLUMN_PREFIX_PREF);
+    if (value === undefined || value === null)
+      return PropertyColumnsPlugin.DEFAULT_COLUMN_PREFIX;
+    return String(value);
+  }
+
+  private ensureColumnPrefixPref() {
+    const value = Zotero.Prefs.get(PropertyColumnsPlugin.COLUMN_PREFIX_PREF);
+    if (value === undefined) {
+      Zotero.Prefs.set(
+        PropertyColumnsPlugin.COLUMN_PREFIX_PREF,
+        PropertyColumnsPlugin.DEFAULT_COLUMN_PREFIX,
+      );
+    }
+  }
+
+  private registerPrefObserver() {
+    if (this.prefObserver !== null) return;
+    this.prefObserver = Zotero.Prefs.registerObserver(
+      PropertyColumnsPlugin.COLUMN_PREFIX_PREF,
+      () => {
+        void this.rebuildColumns();
+      },
+    );
+  }
+
+  private async rebuildColumns() {
+    for (const key of this.columnKeys.values()) {
+      try {
+        await Zotero.ItemTreeManager.unregisterColumns(key);
+      } catch (e) {
+        // ignore unregister errors
+      }
+    }
+    this.columnKeys.clear();
+    await this.refresh();
   }
 
   private parsePropertyTag(tag: string) {
