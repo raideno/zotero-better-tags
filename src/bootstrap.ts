@@ -6,7 +6,10 @@ class PropertyColumnsPlugin {
   private isInitialized: boolean;
   private static readonly COLUMN_PREFIX_PREF =
     "extensions.property-columns@zotero-plugin.local.columnPrefix";
+  private static readonly VALUE_SEPARATOR_PREF =
+    "extensions.property-columns@zotero-plugin.local.valueSeparator";
   private static readonly DEFAULT_COLUMN_PREFIX = "[Property] ";
+  private static readonly DEFAULT_VALUE_SEPARATOR = ", ";
 
   constructor(rootURI: string) {
     this.rootURI = rootURI;
@@ -22,6 +25,7 @@ class PropertyColumnsPlugin {
 
     await Zotero.initializationPromise;
     this.ensureColumnPrefixPref();
+    this.ensureValueSeparatorPref();
     this.registerPrefObserver();
     await this.refresh();
 
@@ -127,11 +131,13 @@ class PropertyColumnsPlugin {
           item: { getTags: () => Array<{ tag: string }> },
           _key: string,
         ) => {
+          const values: string[] = [];
           for (const { tag } of item.getTags()) {
             const parsed = this.parsePropertyTag(tag);
-            if (parsed && parsed.name === propertyName) return parsed.value;
+            if (parsed && parsed.name === propertyName) values.push(parsed.value);
           }
-          return "";
+          if (!values.length) return "";
+          return values.join(this.getValueSeparator());
         },
         flex: 1,
       });
@@ -163,12 +169,29 @@ class PropertyColumnsPlugin {
     return String(value);
   }
 
+  private getValueSeparator() {
+    const value = Zotero.Prefs.get(PropertyColumnsPlugin.VALUE_SEPARATOR_PREF);
+    if (value === undefined || value === null)
+      return PropertyColumnsPlugin.DEFAULT_VALUE_SEPARATOR;
+    return String(value);
+  }
+
   private ensureColumnPrefixPref() {
     const value = Zotero.Prefs.get(PropertyColumnsPlugin.COLUMN_PREFIX_PREF);
     if (value === undefined) {
       Zotero.Prefs.set(
         PropertyColumnsPlugin.COLUMN_PREFIX_PREF,
         PropertyColumnsPlugin.DEFAULT_COLUMN_PREFIX,
+      );
+    }
+  }
+
+  private ensureValueSeparatorPref() {
+    const value = Zotero.Prefs.get(PropertyColumnsPlugin.VALUE_SEPARATOR_PREF);
+    if (value === undefined) {
+      Zotero.Prefs.set(
+        PropertyColumnsPlugin.VALUE_SEPARATOR_PREF,
+        PropertyColumnsPlugin.DEFAULT_VALUE_SEPARATOR,
       );
     }
   }

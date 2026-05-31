@@ -22,9 +22,10 @@ Outputs to `dist/`. The `pack` script generates `plugin.xpi` from `dist/`.
 
 ## Usage
 
-Add tags in the form `property:Name:Value` to any item. Each unique `Name` becomes a new column in the item list, and the cell value is the `Value` from that tag. You can use the new columns to better filter and visualize items in your collection or library.
+Add tags in the form `property:Name:Value` to any item. Each unique `Name` becomes a new column in the item list, and the cell value is the `Value` from that tag. If multiple tags share the same `Name`, all values are shown and separated by the value separator. You can use the new columns to better filter and visualize items in your collection or library.
 
 Column labels use the prefix set in the Zotero preference `extensions.property-columns@zotero-plugin.local.columnPrefix`. Leave it empty for no prefix. If unset, the default prefix is `[Property] `.
+Multiple values use the separator set in the Zotero preference `extensions.property-columns@zotero-plugin.local.valueSeparator`. If unset, the default separator is `, `.
 
 Example tags:
 
