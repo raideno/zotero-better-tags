@@ -1,0 +1,18 @@
+{
+  "addons": {
+    "property-columns@zotero-plugin.local": {
+      "updates": [
+        {
+          "version": "0.6.0",
+          "update_link": "https://github.com/raideno/zotero-better-tags/releases/download/v0.6.0/plugin.xpi",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "7.0",
+              "strict_max_version": "9.*"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
